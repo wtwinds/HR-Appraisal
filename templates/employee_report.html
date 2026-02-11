@@ -42,6 +42,7 @@
                     <th>Date</th>
                     <th>Project</th>
                     <th>Rating</th>
+                    <th>Comment</th>
                 </tr>
             </thead>
             <tbody>
@@ -58,6 +59,7 @@
                             {% endfor %}
                             {{ r.rating }}/10
                     </td>
+                    <td>{{r.comment}}</td>
                 </tr>
                 {% endfor %}
             </tbody>

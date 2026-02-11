@@ -14,7 +14,7 @@ client = MongoClient(app.config["MONGO_URI"])
 db = client[app.config["DB_NAME"]]
 
 users = db.users
-ratings = db.ratings   # 🔥 using ratings collection
+ratings = db.ratings
 
 
 # ---------------- LOGIN ----------------
@@ -56,11 +56,13 @@ def admin():
         project = request.form["project"]
         rating_value = int(request.form["rating"])
         date = request.form["date"]
+        comment = request.form["comment"]
 
         ratings.insert_one({
             "employeeName": employee,
             "projectName": project,
             "rating": rating_value,
+            "comment": comment,
             "adminName": session["user"],
             "date": date
         })
@@ -125,6 +127,8 @@ def download(name):
         p.drawString(100, y, f"Project: {r['projectName']}")
         y -= 20
         p.drawString(100, y, f"Rating: {r['rating']}/10")
+        y -= 20
+        p.drawString(100, y, f"Comment: {r.get('comment','')}")
         y -= 40
 
     p.save()
