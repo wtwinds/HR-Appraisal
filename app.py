@@ -75,7 +75,7 @@ def admin():
         flash("Rating Submitted Successfully!")
 
     employees = users.find({"role": "employee"})
-    project_list=projects.find()
+    project_list = list(projects.find())
     today = datetime.now().strftime("%Y-%m-%d")
 
     return render_template("admin_dashboard.html",
