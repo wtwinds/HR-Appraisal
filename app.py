@@ -55,33 +55,39 @@ def login():
 def admin():
     if session.get("role") != "admin":
         return redirect("/")
+    return render_template("admin_dashboard.html")
+
+#-----------------RATE PRODUCT----------------------
+@app.route("/rate-product", methods=["GET","POST"])
+def rate_product():
+
+    if session.get("role") != "admin":
+        return redirect("/")
 
     if request.method == "POST":
-        employee = request.form["employee"]
-        project = request.form["project"]
-        rating_value = int(request.form["rating"])
-        date = request.form["date"]
-        comment = request.form["comment"]
 
         ratings.insert_one({
-            "employeeName": employee,
-            "projectName": project,
-            "rating": rating_value,
-            "comment": comment,
+            "employeeName": request.form["employee"],
+            "projectName": request.form["project"],
+            "rating": int(request.form["rating"]),
+            "comment": request.form["comment"],
             "adminName": session["user"],
-            "date": date
+            "date": request.form["date"]
         })
 
         flash("Rating Submitted Successfully!")
 
-    employees = users.find({"role": "employee"})
+    employees = users.find({"role":"employee"})
     project_list = list(projects.find())
+
     today = datetime.now().strftime("%Y-%m-%d")
 
-    return render_template("admin_dashboard.html",
-                           employees=employees,
-                           projects=project_list,
-                           today=today)
+    return render_template(
+        "rating_product.html",
+        employees=employees,
+        projects=project_list,
+        today=today
+    )
 
 # ---------------- ADD DATA PAGE ----------------
 @app.route("/add-data")
@@ -159,10 +165,7 @@ def employee_dashboard():
     if session.get("role") != "employee":
         return redirect("/")
     name = session["user"]
-    records = ratings.find({"employeeName": name})
-    return render_template("employee_report.html",
-                           records=records,
-                           name=name)
+    return render_template("employee_dashboard.html",name=name)
 
 
 # ---------------- DOWNLOAD PDF ----------------

@@ -4,21 +4,12 @@
 <head>
     <title>Capstone Project</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 </head>
 
-<body class="bg-light">
-
-    <nav class="navbar navbar-dark bg-dark">
-        <div class="container">
-            <span class="navbar-brand">Capstone Page</span>
-
-            <div class="ms-auto">
-                <a href="/admin" class="btn btn-light btn-sm me-2">Dashboard</a>
-                <a href="/logout" class="btn btn-danger btn-sm">Logout</a>
-            </div>
-        </div>
-    </nav>
-
+<body class="bg-light" id="body">
+    {% include "navbar.html" %}
     <div class="container mt-5">
 
         <div class="card shadow p-4">
@@ -35,7 +26,6 @@
         </div>
 
     </div>
-
 </body>
 
 </html>
