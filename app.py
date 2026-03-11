@@ -1,18 +1,26 @@
+import io
+import os
 from flask import Flask, render_template, request, redirect, session, flash, send_file
 from pymongo import MongoClient
 from config import Config
 from datetime import datetime
 from reportlab.pdfgen import canvas
-import io
 import urllib.parse
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = "hr_secret_key"
 app.config.from_object(Config)
+
+UPLOAD_FOLDER = "static/uploads"
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 client = MongoClient(app.config["MONGO_URI"])
 db = client[app.config["DB_NAME"]]
@@ -133,12 +141,78 @@ def add_project():
 
     return redirect("/admin")
 
-# ---------------- CAPSTONE PAGE ----------------
-@app.route("/capstone")
-def capstone():
+# ---------------- ASSIGN PROJECT PAGE ----------------
+@app.route("/assign-project", methods=["GET","POST"])
+def assign_project():
+
     if session.get("role") != "admin":
         return redirect("/")
-    return render_template("capstone.html")
+
+    if request.method == "POST":
+
+        product = request.form["product"]
+        apm = request.form["apm"]
+        developer = request.form["developer"]
+        timeline = request.form["timeline"]
+        task = request.form["task"]
+
+        db.assignments.insert_one({
+            "product": product,
+            "apm": apm,
+            "developer": developer,
+            "timeline": timeline,
+            "task": task,
+            "createdBy": session["user"]
+        })
+
+        flash("Project Assigned Successfully!")
+
+    products = list(projects.find())
+
+    apms = users.find({"role":"apm"})
+    developers = users.find({"role":"employee"})
+
+    return render_template(
+        "assign_project.html",
+        products=products,
+        apms=apms,
+        developers=developers
+    )
+
+# ---------------- ADMIN CAPSTONE ----------------
+@app.route("/capstone")
+def capstone():
+
+    if session.get("role") != "admin":
+        return redirect("/")
+
+    employees = users.find({"role":"employee"})
+
+    return render_template(
+        "admin_capstone.html",
+        employees=employees
+    )
+
+
+# ---------------- PROJECT TIMELINE ----------------
+@app.route("/project-timeline")
+def project_timeline():
+
+    if session.get("role") not in ["employee", "apm"]:
+        return redirect("/")
+
+    name = session["user"]
+
+    if session.get("role") == "employee":
+        records = db.assignments.find({"developer": name})
+
+    else:
+        records = db.assignments.find({"apm": name})
+
+    return render_template(
+        "view_project.html",
+        records=records
+    )
 
 # ---------------- VIEW REPORTS ----------------
 @app.route("/reports")
@@ -148,6 +222,45 @@ def reports():
     employees = users.find({"role": "employee"})
     return render_template("view_reports.html", employees=employees)
 
+# ---------------- VIEW EMPLOYEE CAPSTONE ----------------
+@app.route("/capstone/<name>")
+def view_capstone(name):
+
+    if session.get("role") != "admin":
+        return redirect("/")
+
+    files = db.capstones.find({"employee": name})
+
+    return render_template(
+        "capstone_files.html",
+        files=files,
+        name=name
+    )
+
+#--------------------Capstone Download---------------------
+@app.route("/capstone-download/<filename>")
+def capstone_download(filename):
+
+    path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+
+    return send_file(
+        path,
+        as_attachment=True
+    )
+
+# ---------------- VIEW PDF ----------------
+@app.route("/capstone-view/<filename>")
+def capstone_view(filename):
+
+    if session.get("role") != "admin":
+        return redirect("/")
+
+    path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+
+    return send_file(
+        path,
+        mimetype="application/pdf"
+    )
 
 # ---------------- EMPLOYEE REPORT ----------------
 @app.route("/employee/<name>")
@@ -167,6 +280,32 @@ def employee_dashboard():
     name = session["user"]
     return render_template("employee_dashboard.html",name=name)
 
+# ---------------- EMPLOYEE CAPSTONE ----------------
+@app.route("/employee-capstone", methods=["GET","POST"])
+def employee_capstone():
+
+    if session.get("role") != "employee":
+        return redirect("/")
+
+    if request.method == "POST":
+
+        file = request.files["pdf"]
+
+        if file:
+            filename = secure_filename(file.filename)
+
+            path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            file.save(path)
+
+            db.capstones.insert_one({
+                "employee": session["user"],
+                "filename": filename,
+                "date": datetime.now()
+            })
+
+            flash("Capstone Uploaded Successfully")
+
+    return render_template("employee_capstone.html")
 
 # ---------------- DOWNLOAD PDF ----------------
 @app.route("/download/<path:name>")
@@ -220,36 +359,6 @@ def download(name):
                      as_attachment=True,
                      download_name="report.pdf",
                      mimetype="application/pdf")
-# @app.route("/download/<path:name>")
-# def download(name):
-#     name = urllib.parse.unquote(name)
-#     records = ratings.find({"employeeName": name})
-
-#     buffer = io.BytesIO()
-#     p = canvas.Canvas(buffer)
-#     y = 800
-
-#     p.drawString(200, y, f"HR Appraisal Report - {name}")
-#     y -= 40
-
-#     for r in records:
-#         p.drawString(100, y, f"Date: {r['date']}")
-#         y -= 20
-#         p.drawString(100, y, f"Project: {r['projectName']}")
-#         y -= 20
-#         p.drawString(100, y, f"Rating: {r['rating']}/10")
-#         y -= 20
-#         p.drawString(100, y, f"Comment: {r.get('comment','')}")
-#         y -= 40
-
-#     p.save()
-#     buffer.seek(0)
-
-#     return send_file(buffer,
-#                      as_attachment=True,
-#                      download_name="report.pdf",
-#                      mimetype='application/pdf')
-
 
 @app.route("/logout")
 def logout():
