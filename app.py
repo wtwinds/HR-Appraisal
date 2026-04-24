@@ -57,6 +57,48 @@ def login():
 
     return render_template("login.html")
 
+#==========Register=================================
+@app.route("/register", methods=["GET", "POST"])
+def register():
+
+    if request.method == "POST":
+
+        name = request.form["name"]
+        email = request.form["email"]
+        password = request.form["password"]
+        confirm = request.form["confirm"]
+        role = request.form["role"]
+        position = request.form.get("position")  # optional
+
+        if password != confirm:
+            flash("Password does not match")
+            return redirect("/register")
+
+        if users.find_one({"loginId": email}):
+            flash("User already exists")
+            return redirect("/register")
+
+        # If admin → no position
+        if role == "admin":
+            position = None
+
+        # If employee → position required
+        if role == "employee" and not position:
+            flash("Please select position")
+            return redirect("/register")
+
+        users.insert_one({
+            "name": name,
+            "loginId": email,
+            "password": password,
+            "role": role,
+            "position": position
+        })
+
+        flash("Account created successfully! Please login.")
+        return redirect("/")
+
+    return render_template("register.html")
 
 # ---------------- ADMIN DASHBOARD ----------------
 @app.route("/admin", methods=["GET", "POST"])
