@@ -1,6 +1,9 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 class Config:
-    SECRET_KEY = "wtwinds_secret_key"
-
-    MONGO_URI = "mongodb+srv://wtwinds26_db_user:r9dDSCSKXb1oAXy3@cluster0.fmebqlj.mongodb.net/"
-
-    DB_NAME = "hr_appraisal"
+    SECRET_KEY = os.getenv("SECRET_KEY")
+    MONGO_URI = os.getenv("MONGO_URI")
+    DB_NAME = os.getenv("DB_NAME")

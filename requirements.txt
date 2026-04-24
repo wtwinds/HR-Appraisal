@@ -4,3 +4,4 @@ flask-bcrypt
 reportlab
 gunicorn
 dnspython
+python-dotenv

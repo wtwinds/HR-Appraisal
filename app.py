@@ -13,8 +13,8 @@ from reportlab.lib import colors
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.secret_key = "hr_secret_key"
 app.config.from_object(Config)
+app.secret_key = app.config["SECRET_KEY"]
 
 UPLOAD_FOLDER = os.path.join("static", "uploads")
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
